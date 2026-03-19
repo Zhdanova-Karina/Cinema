@@ -1,55 +1,60 @@
 #pragma once
 
 #include "Equipment.h"
+#include "IMediaPlayer.h"
+#include "IProjector.h"
+#include <string>
 
 using namespace std;
 
-class Projector : public Equipment {
+class Projector : public Equipment, public IProjector {
 protected:
-    int lampHours;   // Количество отработанных часов лампы
-    bool isPlaying;  // Флаг: идет ли сейчас воспроизведение
+    int lampHours;
+    bool isPlaying;
 
 public:
-    Projector(const string& id);  // Конструктор
+    Projector(const string& id);
+    virtual ~Projector() = default;
 
-    void turnOn() override;    // Включить проектор
-    void turnOff() override;   // Выключить проектор
-    string getType() const override;  // Получить тип устройства
+    // РњРµС‚РѕРґС‹ Equipment
+    void turnOn() override;
+    void turnOff() override;
+    string getType() const override = 0;
 
-    virtual void playMovie(const string& filePath);  // Начать воспроизведение фильма
-    virtual void stop();                              // Остановить воспроизведение
+    // РњРµС‚РѕРґС‹ IMediaPlayer
+    void play(const string& fileName) override;
 
-    // Геттеры и сеттеры
-    void setLampHours(int hours);  // Установить количество часов работы лампы
-    int getLampHours() const;       // Получить количество часов работы лампы
+    // РњРµС‚РѕРґС‹ IProjector
+    string getStatus() const override;
+    void stop() override;
+    int getLampHours() const override { return lampHours; }  // inline РІ .h
+    void setLampHours(int hours) override { lampHours = hours; }  // inline РІ .h
 };
 
-// IMAX проектор (специализированный для IMAX залов)
+// IMAX РїСЂРѕРµРєС‚РѕСЂ
 class ImaxProjector : public Projector {
 public:
-    ImaxProjector(const string& id);  // Конструктор
-
-    // Переопределенные методы
-    void playMovie(const string& filePath) override;  // Воспроизведение IMAX-фильма
-    string getType() const override;                   // Получить тип устройства
-
-    // Специфический метод для IMAX
-    void calibrate();  // Выполнить калибровку проектора
+    ImaxProjector(const string& id);
+    string getType() const override;
+    void play(const string& fileName) override;
+    void calibrate();
 };
 
-// 3D проектор (поддерживает обычные и 3D фильмы)
+// 3D РїСЂРѕРµРєС‚РѕСЂ
 class ThreeDProjector : public Projector {
 private:
-    bool mode3D;  // Флаг: включен ли 3D-режим
-
+    bool mode3D;
 public:
-    ThreeDProjector(const string& id);  // Конструктор
+    ThreeDProjector(const string& id);
+    string getType() const override;
+    void play(const string& fileName) override;
+    void enable3DMode();
+    void disable3DMode();
+};
 
-    // Переопределенные методы
-    void playMovie(const string& filePath) override;  // Воспроизведение с учетом 3D-режима
-    string getType() const override;                   // Получить тип устройства
-
-    // Управление 3D-режимом
-    void enable3DMode();   // Включить 3D-режим
-    void disable3DMode();  // Выключить 3D-режим
+// РЎС‚Р°РЅРґР°СЂС‚РЅС‹Р№ РїСЂРѕРµРєС‚РѕСЂ
+class StandardProjector : public Projector {
+public:
+    StandardProjector(const string& id);
+    string getType() const override;
 };
