@@ -1,13 +1,11 @@
 #pragma once
 
 #include "Equipment.h"
-#include "IMediaPlayer.h"
-#include "IProjector.h"
 #include <string>
 
 using namespace std;
 
-class Projector : public Equipment, public IProjector {
+class Projector : public Equipment {
 protected:
     int lampHours;
     bool isPlaying;
@@ -21,14 +19,13 @@ public:
     void turnOff() override;
     string getType() const override = 0;
 
-    // Методы IMediaPlayer
-    void play(const string& fileName) override;
+    // Добавляем виртуальные методы
+    virtual void play(const string& fileName);
+    virtual void stop();
+    virtual string getStatus() const override;
 
-    // Методы IProjector
-    string getStatus() const override;
-    void stop() override;
-    int getLampHours() const override { return lampHours; }  // inline в .h
-    void setLampHours(int hours) override { lampHours = hours; }  // inline в .h
+    int getLampHours() const { return lampHours; }
+    void setLampHours(int hours) { lampHours = hours; }
 };
 
 // IMAX проектор
