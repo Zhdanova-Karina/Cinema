@@ -2,8 +2,10 @@
 
 using namespace std;
 
-ProjectorDecorator::ProjectorDecorator(unique_ptr<IProjector> projector)
-    : wrappedProjector(move(projector)) {}
+ProjectorDecorator::ProjectorDecorator(Projector* projector)
+    : Projector("") {  // Временный ID
+    wrappedProjector = projector;
+}
 
 void ProjectorDecorator::turnOn() {
     wrappedProjector->turnOn();
@@ -27,12 +29,4 @@ string ProjectorDecorator::getType() const {
 
 void ProjectorDecorator::stop() {
     wrappedProjector->stop();
-}
-
-int ProjectorDecorator::getLampHours() const {
-    return wrappedProjector->getLampHours();
-}
-
-void ProjectorDecorator::setLampHours(int hours) {
-    wrappedProjector->setLampHours(hours);
 }
