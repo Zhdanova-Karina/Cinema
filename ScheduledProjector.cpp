@@ -8,8 +8,8 @@
 
 using namespace std;
 
-ScheduledProjector::ScheduledProjector(unique_ptr<IProjector> projector)
-    : ProjectorDecorator(move(projector)), isRunning(false) {}
+ScheduledProjector::ScheduledProjector(Projector* projector)
+    : ProjectorDecorator(projector), isRunning(false) {}
 
 ScheduledProjector::~ScheduledProjector() {
     stopScheduler();
@@ -24,16 +24,16 @@ void ScheduledProjector::checkSchedule() {
 
             for (auto& task : schedule) {
                 if (!task.completed && task.executeTime <= now) {
-                    // Выполняем задачу
-                    cout << "\n  [Планировщик] "
+                    // Р’С‹РїРѕР»РЅРµРЅРёРµ Р·Р°РґР°С‡Рё
+                    cout << "\n  [РџР»Р°РЅРёСЂРѕРІС‰РёРє] "
                         << put_time(localtime(&task.executeTime), "%H:%M:%S")
-                        << " - Выполнение задачи: " << task.action;
+                        << " - Р’С‹РїРѕР»РЅРµРЅРёРµ Р·Р°РґР°С‡Рё: " << task.action;
                     if (!task.fileName.empty()) {
                         cout << " " << task.fileName;
                     }
                     cout << endl;
 
-                    // Выполняем действие
+                    // Р’С‹РїРѕР»РЅРµРЅРёРµ РґРµР№СЃС‚РІРёСЏ
                     if (task.action == "turnOn") {
                         wrappedProjector->turnOn();
                     }
@@ -44,7 +44,7 @@ void ScheduledProjector::checkSchedule() {
                         wrappedProjector->play(task.fileName);
                     }
 
-                    // Вызываем callback если есть
+                    // Р’С‹РїРѕР»РЅРµРЅРёРµ callback РµСЃР»Рё РµСЃС‚СЊ
                     if (task.callback) {
                         task.callback();
                     }
@@ -53,7 +53,7 @@ void ScheduledProjector::checkSchedule() {
                 }
             }
 
-            // Удаляем выполненные задачи
+            // РЈРґР°Р»РµРЅРёРµ РІС‹РїРѕР»РЅРµРЅРЅС‹С… Р·Р°РґР°С‡
             schedule.erase(
                 remove_if(schedule.begin(), schedule.end(),
                     [](const ScheduledTask& t) { return t.completed; }),
@@ -61,7 +61,7 @@ void ScheduledProjector::checkSchedule() {
             );
         }
 
-        // Спим 1 секунду
+        // РџР°СѓР·Р° 1 СЃРµРєСѓРЅРґР°
         this_thread::sleep_for(chrono::seconds(1));
     }
 }
@@ -69,43 +69,43 @@ void ScheduledProjector::checkSchedule() {
 void ScheduledProjector::scheduleTurnOn(time_t execTime) {
     lock_guard<mutex> lock(scheduleMutex);
     schedule.push_back({ execTime, "turnOn", "", false, nullptr });
-    cout << "  [Планировщик] Запланировано включение на "
+    cout << "  [РџР»Р°РЅРёСЂРѕРІС‰РёРє] Р—Р°РїР»Р°РЅРёСЂРѕРІР°РЅРѕ РІРєР»СЋС‡РµРЅРёРµ РЅР° "
         << put_time(localtime(&execTime), "%H:%M:%S") << endl;
 }
 
 void ScheduledProjector::scheduleTurnOff(time_t execTime) {
     lock_guard<mutex> lock(scheduleMutex);
     schedule.push_back({ execTime, "turnOff", "", false, nullptr });
-    cout << "  [Планировщик] Запланировано выключение на "
+    cout << "  [РџР»Р°РЅРёСЂРѕРІС‰РёРє] Р—Р°РїР»Р°РЅРёСЂРѕРІР°РЅРѕ РІС‹РєР»СЋС‡РµРЅРёРµ РЅР° "
         << put_time(localtime(&execTime), "%H:%M:%S") << endl;
 }
 
 void ScheduledProjector::schedulePlay(time_t execTime, const string& fileName) {
     lock_guard<mutex> lock(scheduleMutex);
     schedule.push_back({ execTime, "play", fileName, false, nullptr });
-    cout << "  [Планировщик] Запланировано воспроизведение '" << fileName
-        << "' на " << put_time(localtime(&execTime), "%H:%M:%S") << endl;
+    cout << "  [РџР»Р°РЅРёСЂРѕРІС‰РёРє] Р—Р°РїР»Р°РЅРёСЂРѕРІР°РЅРѕ РІРѕСЃРїСЂРѕРёР·РІРµРґРµРЅРёРµ '" << fileName
+        << "' РЅР° " << put_time(localtime(&execTime), "%H:%M:%S") << endl;
 }
 
 void ScheduledProjector::cancelAllTasks() {
     lock_guard<mutex> lock(scheduleMutex);
     schedule.clear();
-    cout << "  [Планировщик] Все задачи отменены" << endl;
+    cout << "  [РџР»Р°РЅРёСЂРѕРІС‰РёРє] Р’СЃРµ Р·Р°РґР°С‡Рё РѕС‚РјРµРЅРµРЅС‹" << endl;
 }
 
 void ScheduledProjector::cancelTask(int index) {
     lock_guard<mutex> lock(scheduleMutex);
     if (index >= 0 && index < schedule.size()) {
         schedule.erase(schedule.begin() + index);
-        cout << "  [Планировщик] Задача " << index << " отменена" << endl;
+        cout << "  [РџР»Р°РЅРёСЂРѕРІС‰РёРє] Р—Р°РґР°С‡Р° " << index << " РѕС‚РјРµРЅРµРЅР°" << endl;
     }
 }
 
 void ScheduledProjector::showSchedule() const {
     lock_guard<mutex> lock(scheduleMutex);
-    cout << "  [Планировщик] Текущее расписание:" << endl;
+    cout << "  [РџР»Р°РЅРёСЂРѕРІС‰РёРє] Р Р°СЃРїРёСЃР°РЅРёРµ Р·Р°РґР°С‡:" << endl;
     if (schedule.empty()) {
-        cout << "    Нет запланированных задач" << endl;
+        cout << "    РќРµС‚ Р·Р°РїР»Р°РЅРёСЂРѕРІР°РЅРЅС‹С… Р·Р°РґР°С‡" << endl;
     }
     else {
         for (size_t i = 0; i < schedule.size(); ++i) {
@@ -116,7 +116,7 @@ void ScheduledProjector::showSchedule() const {
             if (!task.fileName.empty()) {
                 cout << " " << task.fileName;
             }
-            cout << (task.completed ? " [ВЫПОЛНЕНО]" : " [ОЖИДАНИЕ]") << endl;
+            cout << (task.completed ? " [Р’С‹РїРѕР»РЅРµРЅРѕ]" : " [РћР¶РёРґР°РµС‚]") << endl;
         }
     }
 }
@@ -125,7 +125,7 @@ void ScheduledProjector::startScheduler() {
     if (!isRunning) {
         isRunning = true;
         schedulerThread = make_unique<thread>(&ScheduledProjector::checkSchedule, this);
-        cout << "  [Планировщик] Запущен" << endl;
+        cout << "  [РџР»Р°РЅРёСЂРѕРІС‰РёРє] Р—Р°РїСѓС‰РµРЅ" << endl;
     }
 }
 
@@ -135,30 +135,30 @@ void ScheduledProjector::stopScheduler() {
         if (schedulerThread && schedulerThread->joinable()) {
             schedulerThread->join();
         }
-        cout << "  [Планировщик] Остановлен" << endl;
+        cout << "  [РџР»Р°РЅРёСЂРѕРІС‰РёРє] РћСЃС‚Р°РЅРѕРІР»РµРЅ" << endl;
     }
 }
 
 void ScheduledProjector::turnOn() {
-    cout << "  [Планировщик] Ручное включение" << endl;
+    cout << "  [РџР»Р°РЅРёСЂРѕРІС‰РёРє] РљРѕРјР°РЅРґР° РІРєР»СЋС‡РµРЅРёСЏ" << endl;
     wrappedProjector->turnOn();
 }
 
 void ScheduledProjector::turnOff() {
-    cout << "  [Планировщик] Ручное выключение" << endl;
+    cout << "  [РџР»Р°РЅРёСЂРѕРІС‰РёРє] РљРѕРјР°РЅРґР° РІС‹РєР»СЋС‡РµРЅРёСЏ" << endl;
     wrappedProjector->turnOff();
 }
 
 void ScheduledProjector::play(const string& fileName) {
-    cout << "  [Планировщик] Ручное воспроизведение" << endl;
+    cout << "  [РџР»Р°РЅРёСЂРѕРІС‰РёРє] РљРѕРјР°РЅРґР° РІРѕСЃРїСЂРѕРёР·РІРµРґРµРЅРёСЏ" << endl;
     wrappedProjector->play(fileName);
 }
 
 string ScheduledProjector::getStatus() const {
     string status = wrappedProjector->getStatus();
 
-    lock_guard<mutex> lock(scheduleMutex);  // Блокировка для доступа к schedule
-    status += "\n  [Планировщик] Задач в очереди: " + to_string(schedule.size());
+    lock_guard<mutex> lock(scheduleMutex);  // РЎРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ РґР»СЏ РґРѕСЃС‚СѓРїР° Рє schedule
+    status += "\n  [РџР»Р°РЅРёСЂРѕРІС‰РёРє] Р—Р°РґР°С‡ РІ СЂР°СЃРїРёСЃР°РЅРёРё: " + to_string(schedule.size());
 
     return status;
 }
