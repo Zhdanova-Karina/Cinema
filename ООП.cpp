@@ -12,8 +12,6 @@
 #include "LightSystem.h"
 #include "AirConditioner.h"
 #include "DoorLock.h"
-#include "IMediaPlayer.h"
-#include "ImaxAdapter.h"
 #include "HallGroupFactory.h"
 #include "ScheduleIterator.h"
 #include "RegularSession.h"
@@ -27,6 +25,11 @@
 #include "LightweightMovie.h"
 #include "TicketExpert.h"
 #include "CinemaFacade.h"
+#include "CoolingProjector.h"
+#include "ExternalTicketAPI.h"
+#include "IBookingSystem.h"
+#include "BookingAdapter.h"
+
 
 using namespace std;
 
@@ -84,31 +87,63 @@ int main() {
     for (const auto& status : statuses1) {
         cout << "  " << status << endl;
     }
+    // ========== ТЕСТИРОВАНИЕ АДАПТЕРА СИСТЕМЫ БРОНИРОВАНИЯ ==========
+    cout << "\n=== ТЕСТИРОВАНИЕ АДАПТЕРА СИСТЕМЫ БРОНИРОВАНИЯ ===\n" << endl;
+
+    // Создаем внешний API (несовместимый интерфейс)
+    ExternalTicketAPI* externalAPI = new ExternalTicketAPI();
+
+    // Адаптируем его к нашему интерфейсу
+    IBookingSystem* bookingSystem = new BookingAdapter(externalAPI);
+
+    // Получаем доступные места для сеанса
+    string sessionId = "SESSION_001";
+    vector<int> availableSeats = bookingSystem->getAvailableSeats(sessionId);
+
+    cout << "Доступные места: ";
+    for (int seat : availableSeats) {
+        cout << seat << " ";
+    }
+    cout << endl;
+
+    // Бронируем билет
+    if (bookingSystem->bookTicket(sessionId, 5)) {
+        cout << "Билет успешно забронирован!" << endl;
+    }
+
+    // Отменяем бронирование
+    if (bookingSystem->cancelBooking("RES_1234")) {
+        cout << "Бронирование отменено!" << endl;
+    }
+
+    // Очистка памяти
+    delete bookingSystem;
+    delete externalAPI;
 
     // ========== ТЕСТИРОВАНИЕ ДЕКОРАТОРА-ПЛАНИРОВЩИКА ==========
     cout << "\n=== ТЕСТИРОВАНИЕ ДЕКОРАТОРА-ПЛАНИРОВЩИКА ===\n" << endl;
 
-    // Создаем обычный проектор
-    auto basicProjector = make_unique<StandardProjector>("STD-001");
+    // Создаем обычный проектор (обычный указатель)
+    Projector* basicProjector1 = new StandardProjector("STD-001");
 
-    // Оборачиваем его в декоратор с планировщиком
-    auto scheduledProjector = make_unique<ScheduledProjector>(move(basicProjector));
+    // Оборачиваем его в декоратор с планировщиком (объявляем как Projector*)
+    Projector* scheduledProjector = new ScheduledProjector(basicProjector1);
 
-    // Запускаем планировщик
-    scheduledProjector->startScheduler();
+    // Запускаем планировщик (с приведением типа)
+    static_cast<ScheduledProjector*>(scheduledProjector)->startScheduler();
 
     // Получаем текущее время
     time_t now = time(nullptr);
 
     // Планируем задачи с интервалами
     cout << "\n--- Планирование задач ---" << endl;
-    scheduledProjector->scheduleTurnOn(now + 2);      // Через 2 секунды
-    scheduledProjector->schedulePlay(now + 4, "Дюна.mp4");   // Через 4 секунды
-    scheduledProjector->scheduleTurnOff(now + 6);     // Через 6 секунд
+    static_cast<ScheduledProjector*>(scheduledProjector)->scheduleTurnOn(now + 2);
+    static_cast<ScheduledProjector*>(scheduledProjector)->schedulePlay(now + 4, "Дюна.mp4");
+    static_cast<ScheduledProjector*>(scheduledProjector)->scheduleTurnOff(now + 6);
 
     // Показываем расписание
     cout << "\n--- Текущее расписание ---" << endl;
-    scheduledProjector->showSchedule();
+    static_cast<ScheduledProjector*>(scheduledProjector)->showSchedule();
 
     // Имитация работы в реальном времени
     cout << "\n--- Ожидание выполнения задач (10 секунд) ---" << endl;
@@ -118,18 +153,116 @@ int main() {
 
         // Показываем статус на определенных секундах
         if (i == 3 || i == 5 || i == 7) {
-            cout << scheduledProjector->getStatus() << endl;
+            cout << static_cast<ScheduledProjector*>(scheduledProjector)->getStatus() << endl;
         }
     }
 
     // Останавливаем планировщик
-    scheduledProjector->stopScheduler();
+    static_cast<ScheduledProjector*>(scheduledProjector)->stopScheduler();
 
     // Демонстрация ручного управления
     cout << "\n--- Ручное управление ---" << endl;
-    scheduledProjector->turnOn();
+    scheduledProjector->turnOn();      // Эти методы доступны через Projector*
     scheduledProjector->play("Аватар 2.mp4");
     scheduledProjector->turnOff();
+
+    // Удаляем объекты
+    delete scheduledProjector;
+    delete basicProjector1;
+
+    // ========== ТЕСТИРОВАНИЕ ДЕКОРАТОРА ОСТЫВАНИЯ ==========
+    cout << "\n=== ТЕСТИРОВАНИЕ ДЕКОРАТОРА ОСТЫВАНИЯ ===\n" << endl;
+
+    // Создаем обычный проектор
+    Projector* basicProjector2 = new StandardProjector("STD-002");
+
+    // Оборачиваем его в декоратор остывания
+    Projector* coolingProjector = new CoolingProjector(basicProjector2, 10); // 10 секунд остывания
+
+    // Тестируем работу
+    cout << "\n--- Включение и воспроизведение ---" << endl;
+    coolingProjector->turnOn();
+    coolingProjector->play("Фильм.mp4");
+
+    cout << "\n--- Выключение (запуск остывания) ---" << endl;
+    coolingProjector->turnOff();
+
+    cout << "\n--- Попытка включить во время остывания ---" << endl;
+    this_thread::sleep_for(chrono::seconds(3));
+    coolingProjector->turnOn();  // Должен подождать остывания
+
+    cout << "\n--- Статус проектора ---" << endl;
+    cout << coolingProjector->getStatus() << endl;
+
+    // Удаляем объекты
+    delete coolingProjector;
+    delete basicProjector2;
+
+    // ========== ТЕСТИРОВАНИЕ ВЛОЖЕННЫХ ДЕКОРАТОРОВ ==========
+// Планировщик + Остывание
+    cout << "\n=== ТЕСТИРОВАНИЕ ВЛОЖЕННЫХ ДЕКОРАТОРОВ ===\n";
+    cout << "=== Планировщик + Остывание ===\n" << endl;
+
+    // Создаем базовый проектор
+    Projector* basicProjector = new StandardProjector("STD-003");
+
+    // Сначала оборачиваем в декоратор остывания
+    Projector* coolingProjector1 = new CoolingProjector(basicProjector, 15); // 15 секунд остывания
+
+    // Затем оборачиваем в декоратор планировщика
+    Projector* scheduledProjector1 = new ScheduledProjector(coolingProjector1);
+
+    // Приводим к типу ScheduledProjector* для доступа к методам планировщика
+    ScheduledProjector* combo = static_cast<ScheduledProjector*>(scheduledProjector1);
+
+    // Запускаем планировщик
+    combo->startScheduler();
+
+    // Получаем текущее время
+    time_t nowTime = time(nullptr);
+
+    // Планируем задачи с интервалами
+    cout << "\n--- Планирование задач ---" << endl;
+    combo->scheduleTurnOn(now + 2);      // Через 2 секунды включить
+    combo->schedulePlay(now + 5, "Интерстеллар.mp4");   // Через 5 секунд воспроизвести
+    combo->scheduleTurnOff(now + 10);     // Через 10 секунд выключить (запустит остывание)
+
+    // Показываем расписание
+    cout << "\n--- Текущее расписание ---" << endl;
+    combo->showSchedule();
+
+    // Имитация работы в реальном времени
+    cout << "\n--- Ожидание выполнения задач (20 секунд) ---" << endl;
+    for (int i = 1; i <= 20; i++) {
+        this_thread::sleep_for(chrono::seconds(1));
+        cout << "\nСекунда " << i << ":" << endl;
+
+        // Показываем статус на определенных секундах
+        if (i == 3 || i == 6 || i == 8 || i == 12 || i == 15 || i == 18) {
+            cout << combo->getStatus() << endl;
+        }
+
+        // Показываем состояние остывания каждые 5 секунд
+        if (i % 5 == 0) {
+            // Получаем доступ к декоратору остывания через приведение типов
+            // Так как scheduledProjector оборачивает coolingProjector
+            CoolingProjector* cooler = static_cast<CoolingProjector*>(
+                static_cast<ScheduledProjector*>(scheduledProjector1)->getWrappedProjector()
+                );
+            if (cooler) {
+                cout << "  [Статус остывания] "
+                    << (cooler->isCoolingDown() ? "Проектор остывает" : "Проектор остыл") << endl;
+            }
+        }
+    }
+
+    // Останавливаем планировщик
+    combo->stopScheduler();
+
+    // Удаляем объекты в правильном порядке (обратном созданию)
+    delete scheduledProjector1;  // Удаляем декоратор планировщика
+    delete coolingProjector1;     // Удаляем декоратор остывания
+    delete basicProjector;       // Удаляем базовый проектор
 
     // ========== ТЕСТИРОВАНИЕ КОМПОНОВЩИКА ==========
     cout << "\n=== ТЕСТИРОВАНИЕ ПАТТЕРНА КОМПОНОВЩИК ===\n" << endl;
@@ -450,61 +583,6 @@ int main() {
     auto stats = cinema.getAllSessionsIterator();
     cout << "   Всего сеансов в системе: " << stats.size() << endl;
     stats.printSummary();
-
-    cout << "=== ТЕСТИРОВАНИЕ ПРОЕКТОРОВ ===\n" << endl;
-
-    // 1. Обычное использование (без адаптера)
-    cout << "1. Прямое использование проекторов:" << endl;
-
-    auto imax = make_unique<ImaxProjector>("IMAX-001");
-    auto threeD = make_unique<ThreeDProjector>("3D-001");
-
-    imax->turnOn();
-    imax->play("Dune.mp4");
-    imax->calibrate();
-    imax->turnOff();
-
-    cout << endl;
-    threeD->turnOn();
-    threeD->enable3DMode();
-    threeD->play("Avatar_2.mp4");
-    threeD->getStatus();
-
-    cout << "\n2. Использование через IMediaPlayer:" << endl;
-
-    vector<unique_ptr<IMediaPlayer>> players;
-    auto imax2 = make_unique<ImaxProjector>("IMAX-002");
-    auto threeD2 = make_unique<ThreeDProjector>("3D-002");
-
-    imax2->turnOn();
-    threeD2->turnOn();
-
-    players.push_back(move(imax2));
-    players.push_back(move(threeD2));
-
-    for (auto& player : players) {
-        player->play("Oppenheimer.mp4");
-    }
-
-    // 3. Использование адаптера
-    cout << "\n3. Использование адаптера:" << endl;
-
-    auto adapter = make_unique<ImaxAdapter>(make_unique<ImaxProjector>("IMAX-003"));
-    adapter->play("Interstellar.mp4");
-
-    cout << "\nЗавершение сеанса в зале 1:" << endl;
-    hall1->cleanupAfterSession();
-
-    // Демонстрация для VIP зала
-    cout << "\n--- Работа с VIP залом (Зал #2) ---" << endl;
-
-    Session session2("Дюна 2", "20:00", 155);
-    hall2->addSession(session2);
-    hall2->prepareForSession(session2);
-
-    // Демонстрация аварийной остановки
-    cout << "\n--- Тест аварийной остановки ---" << endl;
-    hall2->getController()->emergencyStop();
 
     // ========== ТЕСТИРОВАНИЕ ПАТТЕРНА BRIDGE ==========
     cout << "\n=== ТЕСТИРОВАНИЕ ПАТТЕРНА BRIDGE ===\n" << endl;
