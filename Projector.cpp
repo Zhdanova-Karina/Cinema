@@ -9,35 +9,35 @@ Projector::Projector(const string& id)
 
 void Projector::turnOn() {
     isOn = true;
-    cout << "  [Проектор " << deviceId << "] Включен" << endl;
+    cout << "  [Проектор " << getDeviceId() << "] Включен" << endl;  // Используем геттер
 }
 
 void Projector::turnOff() {
     isOn = false;
     isPlaying = false;
-    cout << "  [Проектор " << deviceId << "] Выключен" << endl;
+    cout << "  [Проектор " << getDeviceId() << "] Выключен" << endl;  // Используем геттер
 }
 
 void Projector::play(const string& fileName) {
     if (isOn) {
         isPlaying = true;
         lampHours += 2;
-        cout << "  [Проектор " << deviceId << "] Воспроизведение: " << fileName << endl;
+        cout << "  [Проектор " << getDeviceId() << "] Воспроизведение: " << fileName << endl;
     }
     else {
-        cout << "  [Проектор " << deviceId << "] Ошибка: проектор выключен" << endl;
+        cout << "  [Проектор " << getDeviceId() << "] Ошибка: проектор выключен" << endl;
     }
 }
 
 void Projector::stop() {
     if (isPlaying) {
         isPlaying = false;
-        cout << "  [Проектор " << deviceId << "] Воспроизведение остановлено" << endl;
+        cout << "  [Проектор " << getDeviceId() << "] Воспроизведение остановлено" << endl;
     }
 }
 
 string Projector::getStatus() const {
-    return string("Проектор ") + deviceId +
+    return string("Проектор ") + getDeviceId() +
         (isOn ? " включен" : " выключен") +
         (isPlaying ? ", воспроизведение" : "") +
         ", ресурс лампы: " + to_string(lampHours) + " часов";
@@ -50,18 +50,18 @@ void ImaxProjector::play(const string& fileName) {
     if (isOn) {
         isPlaying = true;
         lampHours += 3;
-        cout << "  [IMAX Проектор " << deviceId << "] Воспроизведение в IMAX-качестве: " << fileName << endl;
+        cout << "  [IMAX Проектор " << getDeviceId() << "] Воспроизведение в IMAX-качестве: " << fileName << endl;
         cout << "  [IMAX Проектор] Расширенное соотношение сторон, улучшенная яркость" << endl;
     }
     else {
-        cout << "  [IMAX Проектор " << deviceId << "] Ошибка: проектор выключен" << endl;
+        cout << "  [IMAX Проектор " << getDeviceId() << "] Ошибка: проектор выключен" << endl;
     }
 }
 
 string ImaxProjector::getType() const { return "IMAXProjector"; }
 
 void ImaxProjector::calibrate() {
-    cout << "  [IMAX Проектор " << deviceId << "] Калибровка лазерной системы" << endl;
+    cout << "  [IMAX Проектор " << getDeviceId() << "] Калибровка лазерной системы" << endl;
     cout << "  [IMAX Проектор] Настройка фокуса, цветопередачи" << endl;
 }
 
@@ -73,14 +73,14 @@ void ThreeDProjector::play(const string& fileName) {
         isPlaying = true;
         lampHours += 2;
         if (mode3D) {
-            cout << "  [3D Проектор " << deviceId << "] Воспроизведение в 3D-режиме: " << fileName << endl;
+            cout << "  [3D Проектор " << getDeviceId() << "] Воспроизведение в 3D-режиме: " << fileName << endl;
         }
         else {
-            cout << "  [3D Проектор " << deviceId << "] Воспроизведение: " << fileName << endl;
+            cout << "  [3D Проектор " << getDeviceId() << "] Воспроизведение: " << fileName << endl;
         }
     }
     else {
-        cout << "  [3D Проектор " << deviceId << "] Ошибка: проектор выключен" << endl;
+        cout << "  [3D Проектор " << getDeviceId() << "] Ошибка: проектор выключен" << endl;
     }
 }
 
@@ -88,12 +88,12 @@ string ThreeDProjector::getType() const { return "ThreeDProjector"; }
 
 void ThreeDProjector::enable3DMode() {
     mode3D = true;
-    cout << "  [3D Проектор " << deviceId << "] 3D-режим включен" << endl;
+    cout << "  [3D Проектор " << getDeviceId() << "] 3D-режим включен" << endl;
 }
 
 void ThreeDProjector::disable3DMode() {
     mode3D = false;
-    cout << "  [3D Проектор " << deviceId << "] 3D-режим выключен" << endl;
+    cout << "  [3D Проектор " << getDeviceId() << "] 3D-режим выключен" << endl;
 }
 
 // StandardProjector
